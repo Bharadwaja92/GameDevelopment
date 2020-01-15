@@ -20,6 +20,8 @@ Y_MARGIN = (WINDOW_HEIGHT - (BOARD_HEIGHT * SPACE_SIZE)) // 2
 WHITE = (255, 255, 255)
 BRIGHTBLUE = (0, 50, 255)
 GREEN = (0, 255, 255)
+DARK_GREEN = (0, 255, 0)
+LIGHT_BLUE = (0, 0, 128)
 BLACK = (0, 0, 0)
 BGCOLOR = WHITE
 LINE_COLOR = BLACK
@@ -38,7 +40,7 @@ def get_new_board():
 
 
 def draw_board(board, extra_token=None):
-    DISPLAY_SURFACE.fill(BRIGHTBLUE)
+    DISPLAY_SURFACE.fill(BGCOLOR)
     # print(pygame.mouse.get_pos())
     p1 = (X_MARGIN, Y_MARGIN)   # TOP LEFT
     p3 = (WINDOW_WIDTH-(X_MARGIN), Y_MARGIN)    # # TOP RIGHT
@@ -91,12 +93,25 @@ def draw_board(board, extra_token=None):
         elif extra_token['color'] == BLACK:
             DISPLAY_SURFACE.blit(BLACK_TOKEN_IMAGE, rect_for_extra_token)
 
-    DISPLAY_SURFACE.blit(RED_TOKEN_IMAGE, RED_PILE_RECT)  # red on the left
-    DISPLAY_SURFACE.blit(BLACK_TOKEN_IMAGE, BLACK_PILE_RECT)  # black on the right
+    if STAGE == 1:
+        DISPLAY_SURFACE.blit(RED_TOKEN_IMAGE, RED_PILE_RECT)  # red on the left
+        DISPLAY_SURFACE.blit(BLACK_TOKEN_IMAGE, BLACK_PILE_RECT)  # black on the right
+        move_count_font = pygame.font.Font('freesansbold.ttf', 10)
+        red_text = move_count_font.render('red_move_count = {}'.format(0), True, DARK_GREEN, WHITE)
+        black_text = move_count_font.render('black_move_count = {}'.format(0), True, DARK_GREEN, WHITE)
+        red_textRect = red_text.get_rect()
+        br_x, br_y = RED_PILE_RECT.bottomright
+        red_textRect.topleft = (br_x + (SPACE_SIZE // 5), br_y - (SPACE_SIZE // 3))
+        black_textRect = black_text.get_rect()
+        bb_x, bb_y = BLACK_PILE_RECT.bottomright
+        black_textRect.topleft = (bb_x - (SPACE_SIZE * 3.25), bb_y - (SPACE_SIZE // 3))
+
+        DISPLAY_SURFACE.blit(red_text, red_textRect)  # Red Move counter
+        DISPLAY_SURFACE.blit(black_text, black_textRect)  # Black Move counter
 
 
 def get_human_move(board, token_color):
-    print('In get_human_move for player', token_color)
+    print('In get_human_move for player', token_color, ' stage =', STAGE)
     token_x, token_y = None, None
     dragging_token = False
 
@@ -119,9 +134,7 @@ def get_human_move(board, token_color):
                     for col in range(len(BOARD_COORDS[row])):
                         cur_point_x, cur_point_y = BOARD_COORDS[row][col]
                         if abs(event.pos[0] - cur_point_x) <= SPACE_SIZE and abs(event.pos[1] - cur_point_y) <= SPACE_SIZE:
-                            print('Point collide at row {}, column {}'.format(row, col))
                             board[row][col] = token_color
-                            print('board =', board)
                             draw_board(board)
                             pygame.display.update()
                             return
@@ -137,37 +150,40 @@ def get_human_move(board, token_color):
         FPS_CLOCK.tick()
 
 
-def run_game(is_first_game):
+def run_game():
+    global RED_MOVE_COUNT, BLACK_MOVE_COUNT, STAGE
     turn = HUMAN1
     board = get_new_board()
     
     while True:
+        STAGE = 2 if BLACK_MOVE_COUNT >= 3 else 1
         if turn == HUMAN1:
+            RED_MOVE_COUNT += 1
             get_human_move(board, RED)
             turn = HUMAN2
         else:
+            BLACK_MOVE_COUNT += 1
             get_human_move(board, BLACK)
             turn = HUMAN1
-    
-    # draw_board(board)
-    #
-    # pygame.display.update()
-    # FPS_CLOCK.tick()
-    return
 
 
 def dhaadi():
     global FPS_CLOCK, DISPLAY_SURFACE, RED_PILE_RECT, BLACK_PILE_RECT, RED_TOKEN_IMAGE, BLACK_TOKEN_IMAGE, BOARD_IMAGE, \
         COMPUTER_WINNER_IMG, WINNER_RECT, ARROW_IMG, ARROW_RECT, TIE_WINNER_IMG, HUMAN1_WINNER_IMG, HUMAN2_WINNER_IMG, \
-        BOARD_COORDS
+        BOARD_COORDS, RED_MOVE_COUNT, BLACK_MOVE_COUNT, STAGE
     
     pygame.init()
     FPS_CLOCK = pygame.time.Clock()
     DISPLAY_SURFACE = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
     pygame.display.set_caption('DHAADI')
 
+    RED_MOVE_COUNT, BLACK_MOVE_COUNT = 0, 0
+    STAGE = 'stage_1'
+
     RED_PILE_RECT = pygame.Rect(SPACE_SIZE // 2, WINDOW_HEIGHT - (3 * SPACE_SIZE // 2), SPACE_SIZE, SPACE_SIZE)
     BLACK_PILE_RECT = pygame.Rect(WINDOW_WIDTH - (3*SPACE_SIZE//2), WINDOW_HEIGHT - (3 * SPACE_SIZE // 2), SPACE_SIZE, SPACE_SIZE)
+
+    # abc = RED_PILE_RECT.topleft
 
     images_location = '/home/saibharadwaj/Downloads/Ast/Books/Python/makinggames/'
     RED_TOKEN_IMAGE = pygame.image.load(images_location+'4row_red.png')
@@ -182,11 +198,8 @@ def dhaadi():
     WINNER_RECT = HUMAN1_WINNER_IMG.get_rect()
     WINNER_RECT.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
 
-    is_first_game = True
-
     while True:
-        run_game(is_first_game)
-        is_first_game = False
+        run_game()
 
         for event in pygame.event.get():
             if event.type == QUIT:
