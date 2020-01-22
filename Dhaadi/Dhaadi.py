@@ -32,6 +32,7 @@ HUMAN1 = 'human1'
 HUMAN2 = 'human2'
 COMPUTER = 'computer'
 EMPTY = None
+token_original_pos: set = None
 
 
 def get_new_board():
@@ -41,7 +42,7 @@ def get_new_board():
 
 def draw_board(board, extra_token=None):
     DISPLAY_SURFACE.fill(BGCOLOR)
-    # print(pygame.mouse.get_pos())
+    #print(pygame.mouse.get_pos())
     p1 = (X_MARGIN, Y_MARGIN)  # TOP LEFT
     p3 = (WINDOW_WIDTH - (X_MARGIN), Y_MARGIN)  # # TOP RIGHT
     p9 = (WINDOW_WIDTH - (X_MARGIN), WINDOW_HEIGHT - (Y_MARGIN))  # BOTTOM RIGHT
@@ -57,7 +58,7 @@ def draw_board(board, extra_token=None):
     board_coords = [[p1, p2, p3], [p4, p5, p6], [p7, p8, p9]]
     global BOARD_COORDS, RED_MOVE_COUNT, BLACK_MOVE_COUNT, STAGE
     BOARD_COORDS = board_coords
-    # print('board_coords are', board_coords)
+    #print('board_coords are', board_coords)
     """ 
     (50, 50), 		(240, 50), 		(430, 50), 
     (50, 240)		(240, 240)		(430, 240), 
@@ -144,6 +145,7 @@ def get_human_move(board, token_color):
     token_x, token_y = None, None
     dragging_token = False
     token_moved = False
+    global token_original_pos
 
     player_token_rect = RED_PILE_RECT if token_color == RED else BLACK_PILE_RECT
 
@@ -177,13 +179,20 @@ def get_human_move(board, token_color):
 
             if STAGE == 2:
                 # print('Getting movement for stage 2')
-                mouse_on_token_flag, stage2_row, stage2_col = is_mouse_on_token(board, event, token_color)
+                if event.type == MOUSEBUTTONDOWN:
+                    mouse_on_token_flag, stage2_row, stage2_col = is_mouse_on_token(board, event, token_color)
+                else:
+                    mouse_on_token_flag, stage2_row, stage2_col = False, -1, -1
                 # print('mouse_on_token_flag, stage2_row, stage2_col are', mouse_on_token_flag, stage2_row, stage2_col)
+                if token_original_pos is None and mouse_on_token_flag:
+                    token_original_pos = (stage2_row, stage2_col)
                 if event.type == MOUSEBUTTONDOWN and not dragging_token and mouse_on_token_flag:
                     dragging_token = True
                     token_x, token_y = event.pos
-                elif event.type == MOUSEMOTION and dragging_token and mouse_on_token_flag:
+                    print("emptying :::: ",stage2_row,stage2_col)
                     board[stage2_row][stage2_col] = EMPTY
+                elif event.type == MOUSEMOTION and dragging_token:
+                    # board[token_original_pos[0]][token_original_pos[1]] = EMPTY
                     token_x, token_y = event.pos
                 elif event.type == MOUSEBUTTONUP and dragging_token:
                     for row in range(len(BOARD_COORDS)):  # Find the circle which intersects with our token
@@ -196,10 +205,15 @@ def get_human_move(board, token_color):
                                     board[row][col] = token_color
                                     draw_board(board)
                                     pygame.display.update()
+                                    token_original_pos = None
                                     return
                                 else:
-                                    print('Invalid move')
-                                    # board[stage2_row][stage2_col] = token_color
+                                    print('Invalid move :: ',token_original_pos)
+                                    if token_original_pos is not None:
+                                        board[token_original_pos[0]][token_original_pos[1]] = token_color
+                                        draw_board(board)
+                                        pygame.display.update()
+                                    token_original_pos = None
                             token_x, token_y = None, None
                             dragging_token = False
                 # if not token_moved:
