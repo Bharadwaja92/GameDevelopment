@@ -177,7 +177,6 @@ def get_human_move(board, token_color):
 
             if STAGE == 2:
                 # print('Getting movement for stage 2')
-                print(event)
                 mouse_on_token_flag, stage2_row, stage2_col = is_mouse_on_token(board, event, token_color)
                 # print('mouse_on_token_flag, stage2_row, stage2_col are', mouse_on_token_flag, stage2_row, stage2_col)
                 if event.type == MOUSEBUTTONDOWN and not dragging_token and mouse_on_token_flag:
